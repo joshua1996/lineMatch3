@@ -7,20 +7,33 @@ public class monster : MonoBehaviour {
     public int atk;
     public int def;
     public int hp;
-
+    private float height_y;
+    //DrawImage tett;
+    
     // Use this for initialization
     void Start () {
-        Debug.Log("dsgr");
         createHealthBar();
-	}
+        damage();
+        height_y=this.GetComponent<RectTransform>().rect.width;
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
-	     
-	}
+    }
     void createHealthBar()
     {
-        var tmp = GameObject.Instantiate(preb,new Vector3(this.transform.position.x, this.transform.position.y -60, 0), Quaternion.identity) as GameObject;
+        Vector3 position = new Vector3(this.transform.position.x,height_y-120, 0);
+        var tmp = GameObject.Instantiate(preb,Vector3.zero, Quaternion.identity) as GameObject;
         tmp.transform.SetParent(transform);
+        tmp.transform.localScale = Vector3.one;
+        tmp.transform.localPosition = position;
+        tmp.name = "monsterHealth";
+    }
+
+   void damage()
+    {
+        GameObject aaa = GameObject.Find("monsterHealth");
+
     }
 }

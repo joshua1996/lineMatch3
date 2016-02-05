@@ -18,6 +18,6 @@ public class restart : MonoBehaviour {
 	}
     void click()
     {
-        SceneManager.LoadScene("testUGUI");
+        SceneManager.LoadScene("testUGUI"); 
     }
 }

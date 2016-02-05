@@ -45,7 +45,19 @@ public class DrawImage : MonoBehaviour
     private GameObject[] monsterObject;
     public GameObject monsterPrefab = null;
     public Sprite[] monsterSprite;
-
+    private GameObject findMonster;
+    private bool isCollect;
+    private List<string> getBlockName = new List<string>();
+    private List<int> getBlockNum = new List<int>();
+    private bool isAttack;
+    private bool touchHeroes;
+    private bool touchMonster;
+    private GameObject pickHeroes;
+    public Material clickHeroesMaterial;
+    private bool isClickHeroesEffect;
+    private float shineLocation=0, shineWidth=0;
+    private GameObject pickMonster;
+    public GameObject targetMonster;
 
     void Start()
     {
@@ -54,84 +66,99 @@ public class DrawImage : MonoBehaviour
         CreateImage();
         createHeroes();
         createMonster();
-        //countDown.text = "10";
+        touchHeroes = true;
+        clickHeroesMaterial.SetFloat("_ShineWidth", 0);
+        clickHeroesMaterial.SetFloat("_ShineLocation", 0);
     }
     
     void Update()
     {
-        if (countDownStart) //点击后进行倒数
+        if (isClickHeroesEffect )
         {
-            if (countDownTime > 0)
-            {
-                countDownTime -= Time.deltaTime;
-                countDown.text = Mathf.Floor(countDownTime).ToString();
-            }
-            else
-            {
-                canTouch = false;
-                countDown.text = "";
-            }
-            
+            clickHeroesEffect();
         }
-        if (stop)
+
+        if (touchHeroes == true) //选择英雄攻击
         {
-            if (canTouch)
+            if (Input.GetMouseButtonDown(0))
             {
-                if (Input.GetMouseButtonDown(0))
+                pickHeroes = EventSystem.current.currentSelectedGameObject;
+                if (pickHeroes!=null && pickHeroes.tag == "heroes")
                 {
-                    
-                    obj = EventSystem.current.currentSelectedGameObject;
-                    if (obj != null && obj.name != "Background" && obj.tag!="heroes")
-                    {
-                        countDownStart = true;
-                        times++;
-                        temp = true;
-                        tempObj = obj;
-                        list.Add(obj);
-                    }
+                    pickHeroes.GetComponent<Image>().material = clickHeroesMaterial;
+                    isClickHeroesEffect = true;
+                    touchHeroes = false;
+                    touchMonster = true;
                 }
             }
-            else
+        }
+
+        if (touchMonster)
+        {
+            if (Input.GetMouseButtonDown(0))
             {
-                temp = false;
-                State(temp);
-                if (times >= number)
+                 pickMonster = EventSystem.current.currentSelectedGameObject;
+                  if (pickMonster.tag == "monster")
+                    {
+                    var targetObject =GameObject. Instantiate(targetMonster, Vector3.zero, Quaternion.identity)as GameObject;
+                    targetObject.transform.SetParent(pickMonster.transform);
+                    targetObject.transform.localScale = Vector3.one;
+                    targetObject.transform.localPosition = new Vector2(0,0);
+                    //  targetObject.GetComponent<RectTransform>().
+                    touchMonster = false;
+                    }
+            }
+        }
+
+        
+            if (countDownStart) //点击后进行倒数
+            {
+                if (countDownTime > 1)
                 {
-                    stop = false;
-                    Remove();
-                    text.text = string.Format("Scores : {0:n1}", ChangeScore(times));
+                    GameObject.Find("time").GetComponent<RectTransform>().localPosition = new Vector2(0, GameObject.Find("time").GetComponent<RectTransform>().localPosition.y);
+                    countDownTime -= Time.deltaTime;
+                    countDown.text = Mathf.Floor(countDownTime).ToString();
                 }
                 else
                 {
-                    for (int i = 0; i < recycle.Count; i++)
-                    {
-                        GameObject.Destroy(recycle[i]);
-                    }
-                    times = 0;
-                    list.Clear();
-                    tempObj = null;
+                GameObject.Find("time").GetComponent<RectTransform>().localPosition = new Vector2(630, GameObject.Find("time").GetComponent<RectTransform>().localPosition.y);
+                countDown.text = "";
+                    canTouch = false;
+                    //b.turn();
+                    //if(isCollect== false )collectBall();
+                    isAttack = true;
+                    attackMonster();
                 }
+
             }
-            if (temp)
+        if (touchHeroes == false && touchMonster == false)
+        {
+            if (stop)
             {
-                if (HoverObj != tempObj)
+                if (canTouch)
                 {
-                    if (Check())
+                    if (Input.GetMouseButtonDown(0))
                     {
-                        times++;
-                        tempObj = HoverObj;
-                        list.Add(HoverObj);
-                        create = true;
-                        State(temp);
+                        obj = EventSystem.current.currentSelectedGameObject;
+                        if (obj != null && obj.tag == "ball") //点击是不是珠子
+                        {
+                            countDownStart = true;
+                            times++;
+                            temp = true;
+                            tempObj = obj;
+                            list.Add(obj);
+                        }
                     }
                 }
-                if (Input.GetMouseButtonUp(0))
+                else //时间到了后将连接的3珠子删掉
                 {
                     temp = false;
                     State(temp);
                     if (times >= number)
                     {
+                        isCollect = true;
                         stop = false;
+                        collectBall();
                         Remove();
                         text.text = string.Format("Scores : {0:n1}", ChangeScore(times));
                     }
@@ -139,16 +166,55 @@ public class DrawImage : MonoBehaviour
                     {
                         for (int i = 0; i < recycle.Count; i++)
                         {
-                            GameObject.Destroy(recycle[i]);
+                            //GameObject.Destroy(recycle[i]);
                         }
                         times = 0;
                         list.Clear();
                         tempObj = null;
                     }
-                
+                }
+                if (temp)
+                {
+                    if (HoverObj != tempObj)
+                    {
+                        if (Check())
+                        {
+                            times++;
+                            tempObj = HoverObj;
+                            list.Add(HoverObj);
+                            create = true;
+                            State(temp);
+                        }
+                    }
+                    if (Input.GetMouseButtonUp(0))
+                    {
+                        temp = false;
+                        State(temp);
+                        if (times >= number)
+                        {
+                            isCollect = true;
+                            stop = false;
+                            collectBall();
+                            Remove();
+                            text.text = string.Format("Scores : {0:n1}", ChangeScore(times));
+                        }
+                        else
+                        {
+                            for (int i = 0; i < recycle.Count; i++)
+                            {
+
+                                GameObject.Destroy(recycle[i]);//删除未达成3珠子删除的箭头
+                            }
+                            times = 0;
+                            list.Clear();
+                            tempObj = null;
+                        }
+
+                    }
+                    State(temp);
+                }
             }
-            State(temp);
-        }
+        
         }
 
         //JudgementDie(number);
@@ -196,7 +262,7 @@ public class DrawImage : MonoBehaviour
     }
 
 
-    void State(bool flag)
+    void State(bool flag) //创建箭头
     {
         for (int i = 0; i < list.Count; i++)
         {
@@ -236,7 +302,6 @@ public class DrawImage : MonoBehaviour
 
                     tmp.transform.Rotate(0, 0, Roate(y_1 - y_2, x_2 - x_1));
                     tmp.transform.name = "Image" + i;
-
                     recycle.Add(tmp);
                     create = false;
                 }
@@ -281,13 +346,15 @@ public class DrawImage : MonoBehaviour
         return 0;
     }
 
-    void Remove() //能连接进行删除
+    void Remove() //能连接后进行删除
     {
         Tweener tweener;
         int count = 0;
-        for (int i = 0; i < recycle.Count; i++)
+        for (int i = 0; i < recycle.Count; i++)//删除箭头
         {
+           
             GameObject.Destroy(recycle[i]);
+           
         }
         for (int i = 0; i < list.Count; i++)
         {
@@ -296,7 +363,7 @@ public class DrawImage : MonoBehaviour
 
             tweener.SetEase(Ease.OutSine);
 
-            list[i].GetComponent<Image>().sprite = mySprite[8];
+            list[i].GetComponent<Image>().sprite = mySprite[8];//删除的珠子暂时变成其他的
 
             tweener.onComplete = delegate()
             {
@@ -381,24 +448,23 @@ public class DrawImage : MonoBehaviour
     }
 
 
-    void test()
+    void test() //对珠子的删除和变换颜色， 位置
     {
         int count = 0;
         int temp = 0;
         bool flag = false;
-
-        for (int i = 0; i < myGameobject.GetLength(1); i++)
+        for (int i = 0; i < myGameobject.GetLength(1); i++) //0++<6  y
         {
-            for (int j = myGameobject.GetLength(0) - 1; j >= 0; j--)
+            for (int j = myGameobject.GetLength(0) - 1; j >= 0; j--) //j--=4>0 x
             {
-                if (myGameobject[j, i].GetComponent<Image>().sprite.name.StartsWith("Bg"))
+                if (myGameobject[j, i].GetComponent<Image>().sprite.name.StartsWith("Bg"))//4,0
                 {
                     flag = true;
                     if (j >= 1)
                     {
                         count++;
                         GameObject obj1 = myGameobject[j, i];//被消除的A对象
-                        GameObject obj2 = myGameobject[j - 1, i];//A对象上面的一个B对象
+                        GameObject obj2 = myGameobject[j - 1, i];//A对象上面的一个B对象 3,6
                         Vector3 position1 = obj1.transform.position;//B对象的位置
                         Vector3 position2 = obj2.transform.position;
                         Tweener tweener = myGameobject[j - 1, i].GetComponent<RectTransform>().DOMove(position1, 0.1f);//掉落的时间
@@ -423,7 +489,7 @@ public class DrawImage : MonoBehaviour
                     else
                     {
                         Tweener tweener = myGameobject[j, i].GetComponent<RectTransform>().DOScale(Vector3.one, 0.2f);//变出珠子的时间
-                        myGameobject[j, i].GetComponent<Image>().sprite = mySprite[Random.Range(0,6)];
+                        myGameobject[j, i].GetComponent<Image>().sprite = mySprite[Random.Range(0,6)];//删除后的珠子随机颜色
                         tweener.onComplete = delegate()
                         {
                             if (count == 0)
@@ -454,7 +520,6 @@ public class DrawImage : MonoBehaviour
         Screen_h = this.GetComponent<RectTransform>().rect.height;
         border_x = (Screen_w - (pix_w) * 6)/2;
         border_y = ((Screen_h - (pix_h) * 5)/2)+10;//8
-        Debug.Log(border_x);
         myGameobject = new GameObject[5, 6];
         int num = 0;
         for (int i = 0; i < myGameobject.GetLength(0); i++)
@@ -462,7 +527,7 @@ public class DrawImage : MonoBehaviour
             for (int j = 0; j < myGameobject.GetLength(1); j++)
             {
                 Vector3 position;
-                position = new Vector3(border_x + (pix_w)*j +pix_w/2 - Screen_w/2,   -border_y-(pix_h)*i - pix_h/2 + Screen_h/2,   0);
+                position = new Vector3(border_x + (pix_w)*j +pix_w/2 - Screen_w/2,   -border_y-(pix_h)*i - pix_h/2 + Screen_h/2,   -1);
               //  position = new Vector3(j*90,i*-90,0);z
                 var tmp = GameObject.Instantiate(imagePrefab, Vector3.zero, Quaternion.identity) as GameObject;
                 myGameobject[i, j] = tmp;
@@ -521,5 +586,67 @@ public class DrawImage : MonoBehaviour
             monsterObject[i].AddComponent<Pic>();
             monsterObject[i].AddComponent<Button>();
         }
+    }
+
+    void attackMonster()
+    {
+        if (isAttack)
+        {
+            float totalDamage=0;
+            float damage = 0;
+            float currentHealth = 0;
+            float ratio;
+            float width;
+            GameObject aaa = GameObject.Find("monsterHealth");
+            RectTransform bbb = aaa.GetComponent<RectTransform>();
+            width = bbb.sizeDelta.x;
+            Debug.Log(width);
+            for (int i = 0; i < getBlockName.Count; i++)
+            {
+                totalDamage += (getBlockNum[i] * 5);
+            }
+            currentHealth = totalDamage / 100;
+            ratio = currentHealth * width;
+            bbb.sizeDelta = new Vector3(100-ratio, bbb.sizeDelta.y,0);
+            Debug.Log(totalDamage);
+        }
+        countDownStart = false;
+        isAttack = false;
+        
+        //Debug.Log(aaa.transform.position.x);
+        getBlockName.Clear();
+        getBlockNum.Clear();
+        
+    }
+    
+    void collectBall()
+    {
+        if (isCollect)
+        {
+            getBlockName.Add(obj.GetComponent<Image>().sprite.ToString());
+            getBlockNum.Add(list.Count);
+        }
+        isCollect = false;
+    }
+
+    void clickHeroesEffect()
+    {
+        if (shineLocation <= 1)
+        {
+            shineWidth += 0.1f;
+            shineLocation += 0.1f;
+            clickHeroesMaterial.SetFloat("_ShineWidth", shineWidth);
+            clickHeroesMaterial.SetFloat("_ShineLocation", shineLocation);
+        }
+        else
+        {
+            if (shineWidth >= 0.5f)
+            {
+                shineWidth -= 0.1f;
+                clickHeroesMaterial.SetFloat("_ShineWidth", shineWidth);
+            }
+           
+        }
+
     }
 }
